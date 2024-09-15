@@ -1,0 +1,80 @@
+# Save the output of this file and use kubectl create -f to import
+# it into Kubernetes.
+#
+# Created with podman-4.9.3
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    bind-mount-options: /var/letsencrypt:Z
+  creationTimestamp: "2024-09-15T12:07:57Z"
+  labels:
+    app: onepod
+  name: onepod
+spec:
+  containers:
+  - image: docker.io/homeassistant/home-assistant:latest
+    name: hoas
+    ports:
+    - containerPort: 443
+      hostIP: 192.168.100.110
+      hostPort: 443
+    - containerPort: 8883
+      hostIP: 192.168.100.110
+      hostPort: 8883
+    - containerPort: 80
+      hostIP: 127.0.0.1
+      hostPort: 80
+    - containerPort: 81
+      hostIP: 127.0.0.1
+      hostPort: 81
+    - containerPort: 8123
+      hostIP: 127.0.0.1
+      hostPort: 8123
+    volumeMounts:
+    - mountPath: /config:Z
+      name: var-haos-config-host-0
+  - args:
+    - /usr/sbin/mosquitto
+    - -c
+    - /mosquitto/config/mosquitto.conf
+    image: docker.io/library/eclipse-mosquitto:latest
+    name: mosquitto
+    volumeMounts:
+    - mountPath: /mosquitto:Z
+      name: var-mqtt-data-host-0
+    - mountPath: /mosquitto/data:Z
+      name: 0b30d75145097893418de468a406cb8dd7cd33af0f28da628cdcca215d36dc3e-pvc
+    - mountPath: /mosquitto/log:Z
+      name: c890fdc6867471d064d132e80c8e78d2eef6917d77ed175d8db824e6f8fc5886-pvc
+  - image: docker.io/jc21/nginx-proxy-manager:latest
+    name: npm
+    volumeMounts:
+    - mountPath: /data:Z
+      name: var-data-host-0
+    - mountPath: /etc/letsencrypt:Z
+      name: var-letsencrypt-host-1
+  restartPolicy: Always
+  volumes:
+  - hostPath:
+      path: /var/haos-config
+      type: Directory
+    name: var-haos-config-host-0
+  - hostPath:
+      path: /var/mqtt-data
+      type: Directory
+    name: var-mqtt-data-host-0
+  - name: 0b30d75145097893418de468a406cb8dd7cd33af0f28da628cdcca215d36dc3e-pvc
+    persistentVolumeClaim:
+      claimName: 0b30d75145097893418de468a406cb8dd7cd33af0f28da628cdcca215d36dc3e
+  - name: c890fdc6867471d064d132e80c8e78d2eef6917d77ed175d8db824e6f8fc5886-pvc
+    persistentVolumeClaim:
+      claimName: c890fdc6867471d064d132e80c8e78d2eef6917d77ed175d8db824e6f8fc5886
+  - hostPath:
+      path: /var/data
+      type: Directory
+    name: var-data-host-0
+  - hostPath:
+      path: /var/letsencrypt
+      type: Directory
+    name: var-letsencrypt-host-1
